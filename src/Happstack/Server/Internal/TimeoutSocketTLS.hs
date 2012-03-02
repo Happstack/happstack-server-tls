@@ -4,6 +4,7 @@
 -}
 module Happstack.Server.Internal.TimeoutSocketTLS where
 
+import           Control.Exception             (SomeException, catch)
 import           Control.Monad                 (liftM)
 import qualified Data.ByteString.Char8         as B
 import qualified Data.ByteString.Lazy.Char8    as L
@@ -11,10 +12,11 @@ import qualified Data.ByteString.Lazy.Internal as L
 import qualified Data.ByteString               as S
 import qualified Happstack.Server.Internal.TimeoutManager as TM
 import           Happstack.Server.Internal.TimeoutIO (TimeoutIO(..))
+import           Network.Socket                (Socket, sClose)
 import           Network.Socket.SendFile (ByteCount, Offset)
 import           OpenSSL.Session               (SSL)
 import qualified OpenSSL.Session               as SSL
-import           Prelude hiding (catch)
+import           Prelude                       hiding (catch)
 import           System.IO (IOMode(ReadMode), SeekMode(AbsoluteSeek), hSeek, withBinaryFile)
 import           System.IO.Unsafe (unsafeInterleaveIO)
 
@@ -32,25 +34,32 @@ sPutTickle thandle ssl cs =
 sGetContents :: TM.Handle 
              -> SSL              -- ^ Connected socket
              -> IO L.ByteString  -- ^ Data received
-sGetContents handle ssl = loop where
-  loop = unsafeInterleaveIO $ do
-    s <- SSL.read ssl 65536
-    TM.tickle handle
-    if S.null s
-      then do -- SSL.shutdown ssl SSL.Unidirectional `catch` (\e -> when (not $ isDoesNotExistError e) (throw e))
-              return L.Empty
-      else L.Chunk s `liftM` loop
+sGetContents handle ssl = 
+    fmap L.fromChunks loop
+    where
+      chunkSize = 65536
+      loop = unsafeInterleaveIO $ do
+               s <- SSL.read ssl chunkSize
+               TM.tickle handle
+               if S.null s
+                then do return []
+                else do ss <- loop
+                        return (s:ss)
 
-timeoutSocketIO :: TM.Handle -> SSL -> TimeoutIO
-timeoutSocketIO handle ssl =
+timeoutSocketIO :: TM.Handle -> Socket -> SSL -> TimeoutIO
+timeoutSocketIO handle socket ssl =
     TimeoutIO { toHandle      = handle
-              , toShutdown    = SSL.shutdown ssl SSL.Unidirectional
+              , toShutdown    = do SSL.shutdown ssl SSL.Unidirectional `catch` ignoreException
+                                   sClose socket `catch` ignoreException
               , toPutLazy     = sPutLazyTickle handle ssl
               , toPut         = sPutTickle     handle ssl
               , toGetContents = sGetContents   handle ssl
               , toSendFile    = sendFileTickle handle ssl
               , toSecure      = True
               }
+    where
+      ignoreException :: SomeException -> IO ()
+      ignoreException _ = return ()
 
 sendFileTickle :: TM.Handle -> SSL -> FilePath -> Offset -> ByteCount -> IO ()
 sendFileTickle thandle ssl fp offset count =

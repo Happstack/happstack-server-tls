@@ -4,7 +4,7 @@
 module Happstack.Server.Internal.TLS where
 
 import Control.Concurrent                         (forkIO, killThread, myThreadId)
-import Control.Exception                          (finally)
+import Control.Exception                          (catch, finally)
 import Control.Exception.Extensible               as E
 import Control.Monad                              (forever, when)
 import Data.Time                                  (UTCTime)
@@ -15,6 +15,7 @@ import Happstack.Server.Internal.TimeoutManager   (cancel, initialize, register)
 import Happstack.Server.Internal.TimeoutSocketTLS as TSS
 import Happstack.Server.Internal.Types            (Request, Response)
 import Network.Socket                             (HostName, PortNumber, Socket, getSocketName, sClose, socketPort)
+import Prelude                                    hiding (catch)
 import           OpenSSL                          (withOpenSSL)
 import           OpenSSL.Session                  (SSL, SSLContext)
 import qualified OpenSSL.Session                  as SSL
@@ -74,22 +75,22 @@ httpsOnSocket cert key socket =
        SSL.contextSetCertificateFile ctx cert
        SSL.contextSetDefaultCiphers  ctx
 
-       b <- SSL.contextCheckPrivateKey ctx
-       when (not b) $ error $ "OpenTLS certificate and key do not match."
+       certOk <- SSL.contextCheckPrivateKey ctx
+       when (not certOk) $ error $ "OpenTLS certificate and key do not match."
 
        return (HTTPS socket ctx)
 
 -- | accept a TLS connection
-acceptTLS :: HTTPS -> IO (SSL, HostName, PortNumber)
+acceptTLS :: HTTPS -> IO (Socket, SSL, HostName, PortNumber)
 acceptTLS (HTTPS sck' ctx) =
     do -- do normal accept
       (sck, peer, port) <- acceptLite sck'
 
       --  then TLS accept
-      ssl <- SSL.connection ctx sck
-      SSL.accept ssl
-
-      return (ssl, peer, port)
+      handle (\ (e :: SomeException) -> sClose sck >> throwIO e) $ do
+          ssl <- SSL.connection ctx sck
+          SSL.accept ssl
+          return (sck, ssl, peer, port)
 
 -- | https:// 'Request'/'Response' loop
 --
@@ -116,27 +117,36 @@ listenTLS tlsConf hand =
 --
 -- see also: 'listenTLS'
 listenTLS' :: Int -> Maybe (LogAccess UTCTime) -> Socket -> HTTPS -> (Request -> IO Response) -> IO ()
-listenTLS' timeout mlog socket https hand = do
+listenTLS' timeout mlog socket https handler = do
 #ifndef mingw32_HOST_OS
   installHandler openEndedPipe Ignore Nothing
 #endif
   tm <- initialize (timeout * (10^(6 :: Int)))
-  do let work :: (SSL, HostName, PortNumber) -> IO ()
-         work (ssl, hn, p) = 
-             do tid     <- myThreadId
-                thandle <- register tm $ do SSL.shutdown ssl SSL.Unidirectional `E.catch` ignoreSSLException
+  do let work :: (Socket, SSL, HostName, PortNumber) -> IO ()
+         work (socket, ssl, hn, p) =
+             do -- add this thread to the timeout table
+                tid     <- myThreadId
+                thandle <- register tm $ do shutdownClose socket ssl
                                             killThread tid
-                let timeoutIO = TSS.timeoutSocketIO thandle ssl
-                request timeoutIO mlog (hn,fromIntegral p) hand `E.catches` [ Handler ignoreConnectionAbruptlyTerminated
-                                                                            , Handler ehs 
-                                                                            ]
+                -- handle the request
+                let timeoutIO = TSS.timeoutSocketIO thandle socket ssl
+
+                request timeoutIO mlog (hn, fromIntegral p) handler
+                            `E.catches` [ Handler ignoreConnectionAbruptlyTerminated
+                                        , Handler ehs
+                                        ]
+
                 -- remove thread from timeout table
-                cancel (toHandle timeoutIO)
-                toShutdown timeoutIO `E.catch` ignoreSSLException
+                cancel thandle
+
+                -- close connection
+                shutdownClose socket ssl
 
          loop :: IO ()
-         loop = forever $ do w <- acceptTLS https
-                             forkIO $ work w
+         loop = forever $ do w@(socket, ssl, _, _) <- acceptTLS https
+                             forkIO $ work w `catch` (\(e :: SomeException) -> do
+                                                          shutdownClose socket ssl
+                                                          throwIO e)
                              return ()
          pe e = log' ERROR ("ERROR in https accept thread: " ++ show e)
          infi = loop `catchSome` pe >> infi
@@ -145,17 +155,26 @@ listenTLS' timeout mlog socket https hand = do
      log' NOTICE ("Listening on https://" ++ show sockName ++":" ++ show sockPort)
      infi `finally` (sClose socket)
          where
-           ignoreSSLException :: SSL.SomeSSLException -> IO ()
-           ignoreSSLException _ = return ()
+           shutdownClose :: Socket -> SSL -> IO ()
+           shutdownClose socket ssl =
+               do SSL.shutdown ssl SSL.Unidirectional `E.catch` ignoreException
+                  sClose socket                       `E.catch` ignoreException
+
            -- exception handlers
            ignoreConnectionAbruptlyTerminated :: SSL.ConnectionAbruptlyTerminated -> IO ()
            ignoreConnectionAbruptlyTerminated _ = return ()
+
+           ignoreSSLException :: SSL.SomeSSLException -> IO ()
+           ignoreSSLException _ = return ()
+
+           ignoreException :: SomeException -> IO ()
+           ignoreException _ = return ()
 
            ehs :: SomeException -> IO ()
            ehs x = when ((fromException x) /= Just ThreadKilled) $ log' ERROR ("HTTPS request failed with: " ++ show x)
 
            catchSome op h = 
-               op `E.catches` [ Handler ignoreConnectionAbruptlyTerminated
+               op `E.catches` [ Handler $ ignoreSSLException
                               , Handler $ \(e :: ArithException) -> h (toException e)
                               , Handler $ \(e :: ArrayException) -> h (toException e)
                               , Handler $ \(e :: IOException)    ->
