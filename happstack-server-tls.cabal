@@ -1,5 +1,5 @@
 Name:                happstack-server-tls
-Version:             6.0.0
+Version:             6.0.1
 Synopsis:            extend happstack-server with https:// support (TLS/SSL)
 Description:         extend happstack-server with https:// support (TLS/SSL)
 Homepage:            http://www.happstack.com/
@@ -22,7 +22,7 @@ Library
     Build-Depends:     base                  <  5,
                        bytestring            == 0.9.*,
                        extensible-exceptions == 0.1.*,
-                       happstack-server      == 6.6.*,
+                       happstack-server      >= 6.6.4 && < 7,
                        hslogger              == 1.1.*,
                        HsOpenSSL             == 0.10.*,
                        network               == 2.3.*,
