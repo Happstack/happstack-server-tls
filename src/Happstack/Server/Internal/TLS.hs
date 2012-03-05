@@ -8,6 +8,7 @@ import Control.Exception                          (catch, finally)
 import Control.Exception.Extensible               as E
 import Control.Monad                              (forever, when)
 import Data.Time                                  (UTCTime)
+import GHC.IO.Exception                           (IOErrorType(..))
 import Happstack.Server.Internal.Listen           (listenOn)
 import Happstack.Server.Internal.Handler          (request)
 import Happstack.Server.Internal.Socket           (acceptLite)
@@ -21,7 +22,7 @@ import           OpenSSL.Session                  (SSL, SSLContext)
 import qualified OpenSSL.Session                  as SSL
 import Happstack.Server.Internal.TimeoutIO        (TimeoutIO(toHandle, toShutdown))
 import Happstack.Server.Types                     (LogAccess, logMAccess)
-import System.IO.Error                            (isFullError)
+import System.IO.Error                            (ioeGetErrorType, isFullError, isDoesNotExistError)
 import System.Log.Logger                          (Priority(..), logM)
 #ifndef mingw32_HOST_OS
 import System.Posix.Signals                       (Handler(Ignore), installHandler, openEndedPipe)
@@ -178,8 +179,12 @@ listenTLS' timeout mlog socket https handler = do
                               , Handler $ \(e :: ArithException) -> h (toException e)
                               , Handler $ \(e :: ArrayException) -> h (toException e)
                               , Handler $ \(e :: IOException)    ->
-                                  if isFullError e
+                                  if isFullError e || isDoesNotExistError e
                                   then return () -- h (toException e) -- we could log the exception, but there could be thousands of them
                                   else throw e
                               ]
-
+           isResourceVanishedError :: IOException -> Bool
+           isResourceVanishedError = isResourceVanishedType . ioeGetErrorType
+           isResourceVanishedType :: IOErrorType -> Bool
+           isResourceVanishedType ResourceVanished = True
+           isResourceVanishedType _                = False
