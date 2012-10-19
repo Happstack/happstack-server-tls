@@ -1,4 +1,4 @@
-module Happstack.Server.SimpleHTTPS 
+module Happstack.Server.SimpleHTTPS
      ( TLSConf(..)
      , nullTLSConf
      , simpleHTTPS
@@ -21,10 +21,10 @@ simpleHTTPS :: (ToMessage a) =>
 simpleHTTPS = simpleHTTPS' id
 
 -- | similar 'simpleHTTPS' but allows you to supply a function to convert 'm' to 'IO'.
-simpleHTTPS' :: (ToMessage b, Monad m, Functor m) => 
+simpleHTTPS' :: (ToMessage b, Monad m, Functor m) =>
                 (UnWebT m a -> UnWebT IO b)
-            -> TLSConf 
-            -> ServerPartT m a 
+            -> TLSConf
+            -> ServerPartT m a
             -> IO ()
 simpleHTTPS' toIO tlsConf hs =
     listenTLS tlsConf (\req -> runValidator (fromMaybe return (tlsValidator tlsConf)) =<< (simpleHTTP'' (mapServerPartT toIO hs) req))
