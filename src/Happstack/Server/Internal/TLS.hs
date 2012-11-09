@@ -28,7 +28,7 @@ import System.Log.Logger                          (Priority(..), logM)
 import System.Posix.Signals                       (Handler(Ignore), installHandler, openEndedPipe)
 #endif
 
--- | wrapper around 'logM' for this module 
+-- | wrapper around 'logM' for this module
 log':: Priority -> String -> IO ()
 log' = logM "Happstack.Server.Internal.TLS"
 
@@ -45,7 +45,7 @@ data TLSConf = TLSConf {
 
 -- | a partially complete 'TLSConf' . You must sete 'tlsCert' and 'tlsKey' at a mininum.
 nullTLSConf :: TLSConf
-nullTLSConf = 
+nullTLSConf =
     TLSConf { tlsPort      = 443
             , tlsCert      = ""
             , tlsKey       = ""
@@ -53,7 +53,7 @@ nullTLSConf =
             , tlsLogAccess = Just logMAccess
             , tlsValidator = Nothing
             }
-              
+
 
 -- | record that holds the 'Socket' and 'SSLContext' needed to start
 -- the https:\/\/ event loop. Used with 'simpleHTTPWithSocket''
@@ -174,12 +174,12 @@ listenTLS' timeout mlog socket https handler = do
            ehs :: SomeException -> IO ()
            ehs x = when ((fromException x) /= Just ThreadKilled) $ log' ERROR ("HTTPS request failed with: " ++ show x)
 
-           catchSome op h = 
+           catchSome op h =
                op `E.catches` [ Handler $ ignoreSSLException
                               , Handler $ \(e :: ArithException) -> h (toException e)
                               , Handler $ \(e :: ArrayException) -> h (toException e)
                               , Handler $ \(e :: IOException)    ->
-                                  if isFullError e || isDoesNotExistError e
+                                  if isFullError e || isDoesNotExistError e || isResourceVanishedError e
                                   then return () -- h (toException e) -- we could log the exception, but there could be thousands of them
                                   else throw e
                               ]
