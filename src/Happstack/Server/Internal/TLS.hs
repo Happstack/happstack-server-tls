@@ -38,6 +38,7 @@ data TLSConf = TLSConf {
       tlsPort      :: Int        -- port (usually 443)
     , tlsCert      :: FilePath   -- path to SSL certificate
     , tlsKey       :: FilePath   -- path to SSL private key
+    , tlsCA        :: Maybe FilePath -- PEM encoded list of CA certificates
     , tlsTimeout   :: Int        -- kill connect of timeout (in seconds)
     , tlsLogAccess :: Maybe (LogAccess UTCTime) -- see 'logMAccess'
     , tlsValidator :: Maybe (Response -> IO Response) -- ^ a function to validate the output on-the-fly
@@ -68,12 +69,16 @@ data HTTPS = HTTPS
 --
 httpsOnSocket :: FilePath  -- ^ path to ssl certificate
               -> FilePath  -- ^ path to ssl private key
+              -> Maybe FilePath -- ^ path to PEM encoded list of CA certificates
               -> Socket    -- ^ listening socket (on which listen() has been called, but not accept())
               -> IO HTTPS
-httpsOnSocket cert key socket =
+httpsOnSocket cert key mca socket =
     do ctx <- SSL.context
        SSL.contextSetPrivateKeyFile  ctx key
        SSL.contextSetCertificateFile ctx cert
+       case mca of
+         Nothing   -> return ()
+         (Just ca) -> SSL.contextSetCAFile ctx ca
        SSL.contextSetDefaultCiphers  ctx
 
        certOk <- SSL.contextCheckPrivateKey ctx
@@ -105,7 +110,7 @@ listenTLS :: TLSConf                  -- ^ tls configuration
 listenTLS tlsConf hand =
     do withOpenSSL $ return ()
        tlsSocket <- listenOn (tlsPort tlsConf)
-       https     <- httpsOnSocket (tlsCert tlsConf) (tlsKey tlsConf) tlsSocket
+       https     <- httpsOnSocket (tlsCert tlsConf) (tlsKey tlsConf) (tlsCA tlsConf) tlsSocket
        listenTLS' (tlsTimeout tlsConf) (tlsLogAccess tlsConf) tlsSocket https hand
 
 -- | low-level https:// 'Request'/'Response' loop
