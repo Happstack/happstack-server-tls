@@ -50,6 +50,7 @@ nullTLSConf =
     TLSConf { tlsPort      = 443
             , tlsCert      = ""
             , tlsKey       = ""
+            , tlsCA        = Nothing
             , tlsTimeout   = 30
             , tlsLogAccess = Just logMAccess
             , tlsValidator = Nothing
