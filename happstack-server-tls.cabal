@@ -28,6 +28,9 @@ Library
                        network               >= 2.3 && < 2.5,
                        sendfile              == 0.7.*,
                        time                  >= 1.2 && < 1.5
+    -- these extra libraries are not needed to build/install the server
+    -- but they do need to be installed if you want to use GHCi or
+    -- Template Haskell afterwards
     Extra-Libraries:   ssl
     if !os(darwin)
         Extra-Libraries: cryptopp
