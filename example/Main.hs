@@ -12,13 +12,13 @@ import System.Random       (randomRIO)
 tlsConf :: TLSConf
 tlsConf =
     nullTLSConf { tlsPort = 8443
-                , tlsCert = "ssl/test.crt"
-                , tlsKey  = "ssl/test.key"
+                , tlsCert = "ssl/localhost.crt"
+                , tlsKey  = "ssl/localhost.key"
                 }
 
 routes :: ServerPart Response
 routes =
-    msum [ dir "favicon.ico" $ 
+    msum [ dir "favicon.ico" $
                notFound $ toResponse "sorry, no favicon.ico"
          , do r <- liftIO $ randomRIO (1,100 :: Int)
               b <- rqSecure <$> askRq
@@ -28,6 +28,6 @@ routes =
          ]
 
 main :: IO ()
-main = 
+main =
     do forkIO $ simpleHTTPS tlsConf  routes
        simpleHTTP           nullConf routes
