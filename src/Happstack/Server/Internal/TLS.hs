@@ -159,8 +159,11 @@ listenTLS' timeout mlog socket https handler = do
          infi = loop `catchSome` pe >> infi
      sockName <- getSocketName socket
      sockPort <- socketPort socket
-     log' NOTICE ("Listening on https://" ++ show sockName ++":" ++ show sockPort)
-     infi `finally` (sClose socket)
+     log' NOTICE ("Listening for https:// on port " ++ show sockPort)
+     (infi `catch` (\e -> do log' ERROR ("https:// terminated by " ++ show (e :: SomeException))
+                             throwIO e))
+       `finally` (sClose socket)
+
          where
            shutdownClose :: Socket -> SSL -> IO ()
            shutdownClose socket ssl =
@@ -187,7 +190,7 @@ listenTLS' timeout mlog socket https handler = do
                               , Handler $ \(e :: IOException)    ->
                                   if isFullError e || isDoesNotExistError e || isResourceVanishedError e
                                   then return () -- h (toException e) -- we could log the exception, but there could be thousands of them
-                                  else throw e
+                                  else log' ERROR ("HTTPS accept loop ignoring " ++ show e)
                               ]
            isResourceVanishedError :: IOException -> Bool
            isResourceVanishedError = isResourceVanishedType . ioeGetErrorType
