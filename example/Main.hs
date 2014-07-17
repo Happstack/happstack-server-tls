@@ -7,7 +7,7 @@ import Control.Monad.Trans (liftIO)
 import Happstack.Server    (Request(rqSecure), Response, ServerPart, askRq, dir, ok, notFound, toResponse, simpleHTTP, nullConf)
 import Happstack.Server.SimpleHTTPS (TLSConf(..), simpleHTTPS, nullTLSConf)
 import System.Random       (randomRIO)
-
+import System.Log.Logger
 
 tlsConf :: TLSConf
 tlsConf =
@@ -29,5 +29,6 @@ routes =
 
 main :: IO ()
 main =
-    do forkIO $ simpleHTTPS tlsConf  routes
-       simpleHTTP           nullConf routes
+    do updateGlobalLogger "Happstack" (setLevel INFO)
+       forkIO $ simpleHTTP           nullConf routes
+       simpleHTTPS tlsConf  routes
