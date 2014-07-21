@@ -6,7 +6,7 @@ module Happstack.Server.SimpleHTTPS
      ) where
 
 import Data.Maybe                    (fromMaybe)
-import Happstack.Server              (ToMessage(..), UnWebT(..), ServerPartT, simpleHTTP'', logMAccess, mapServerPartT, runValidator)
+import Happstack.Server              (ToMessage(..), UnWebT, ServerPartT, simpleHTTP'', mapServerPartT, runValidator)
 import Happstack.Server.Internal.TLS (TLSConf(..), nullTLSConf, listenTLS)
 
 -- |start the https:\/\/ server, and handle requests using the supplied

@@ -4,7 +4,6 @@
 module Happstack.Server.Internal.TLS where
 
 import Control.Concurrent                         (forkIO, killThread, myThreadId)
-import Control.Exception                          (catch, finally)
 import Control.Exception.Extensible               as E
 import Control.Monad                              (forever, when)
 import Data.Time                                  (UTCTime)
@@ -15,12 +14,11 @@ import Happstack.Server.Internal.Socket           (acceptLite)
 import Happstack.Server.Internal.TimeoutManager   (cancel, initialize, register)
 import Happstack.Server.Internal.TimeoutSocketTLS as TSS
 import Happstack.Server.Internal.Types            (Request, Response)
-import Network.Socket                             (HostName, PortNumber, Socket, getSocketName, sClose, socketPort)
+import Network.Socket                             (HostName, PortNumber, Socket, sClose, socketPort)
 import Prelude                                    hiding (catch)
 import           OpenSSL                          (withOpenSSL)
 import           OpenSSL.Session                  (SSL, SSLContext)
 import qualified OpenSSL.Session                  as SSL
-import Happstack.Server.Internal.TimeoutIO        (TimeoutIO(toHandle, toShutdown))
 import Happstack.Server.Types                     (LogAccess, logMAccess)
 import System.IO.Error                            (ioeGetErrorType, isFullError, isDoesNotExistError)
 import System.Log.Logger                          (Priority(..), logM)
@@ -110,7 +108,7 @@ listenTLS tlsConf hand =
     do withOpenSSL $ return ()
        tlsSocket <- listenOn (tlsPort tlsConf)
        https     <- httpsOnSocket (tlsCert tlsConf) (tlsKey tlsConf) (tlsCA tlsConf) tlsSocket
-       listenTLS' (tlsTimeout tlsConf) (tlsLogAccess tlsConf) tlsSocket https hand
+       listenTLS' (tlsTimeout tlsConf) (tlsLogAccess tlsConf) https hand
 
 -- | low-level https:// 'Request'/'Response' loop
 --
@@ -121,8 +119,8 @@ listenTLS tlsConf hand =
 -- Each 'Request' is processed in a separate thread.
 --
 -- see also: 'listenTLS'
-listenTLS' :: Int -> Maybe (LogAccess UTCTime) -> Socket -> HTTPS -> (Request -> IO Response) -> IO ()
-listenTLS' timeout mlog socket https handler = do
+listenTLS' :: Int -> Maybe (LogAccess UTCTime) -> HTTPS -> (Request -> IO Response) -> IO ()
+listenTLS' timeout mlog https@(HTTPS lsocket _) handler = do
 #ifndef mingw32_HOST_OS
   installHandler openEndedPipe Ignore Nothing
 #endif
@@ -154,17 +152,17 @@ listenTLS' timeout mlog socket https handler = do
                                          ssl <- acceptTLS sck (sslContext https)
                                          work (sck, ssl, peer, port)
                                            `catch` (\(e :: SomeException) -> do
-                                                          shutdownClose socket ssl
+                                                          shutdownClose sck ssl
                                                           throwIO e)
                              return ()
          pe e = log' ERROR ("ERROR in https accept thread: " ++ show e)
          infi = loop `catchSome` pe >> infi
-     sockName <- getSocketName socket
-     sockPort <- socketPort socket
+     -- sockName <- getSocketName lsocket
+     sockPort <- socketPort lsocket
      log' NOTICE ("Listening for https:// on port " ++ show sockPort)
      (infi `catch` (\e -> do log' ERROR ("https:// terminated by " ++ show (e :: SomeException))
                              throwIO e))
-       `finally` (sClose socket)
+       `finally` (sClose lsocket)
 
          where
            shutdownClose :: Socket -> SSL -> IO ()

@@ -1,11 +1,10 @@
 {-# LANGUAGE BangPatterns, ScopedTypeVariables #-}
-{- | 
+{- |
 -- borrowed from snap-server. Check there periodically for updates.
 -}
 module Happstack.Server.Internal.TimeoutSocketTLS where
 
 import           Control.Exception             (SomeException, catch)
-import           Control.Monad                 (liftM)
 import qualified Data.ByteString.Char8         as B
 import qualified Data.ByteString.Lazy.Char8    as L
 import qualified Data.ByteString.Lazy.Internal as L
@@ -31,10 +30,10 @@ sPutTickle thandle ssl cs =
        TM.tickle thandle
 {-# INLINE sPutTickle #-}
 
-sGetContents :: TM.Handle 
+sGetContents :: TM.Handle
              -> SSL              -- ^ Connected socket
              -> IO L.ByteString  -- ^ Data received
-sGetContents handle ssl = 
+sGetContents handle ssl =
     fmap L.fromChunks loop
     where
       chunkSize = 65536
