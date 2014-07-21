@@ -88,16 +88,14 @@ httpsOnSocket cert key mca socket =
        return (HTTPS socket ctx)
 
 -- | accept a TLS connection
-acceptTLS :: HTTPS -> IO (Socket, SSL, HostName, PortNumber)
-acceptTLS (HTTPS sck' ctx) =
-    do -- do normal accept
-      (sck, peer, port) <- acceptLite sck'
-
-      --  then TLS accept
+acceptTLS :: Socket      -- ^ the socket returned from 'acceptLite'
+          -> SSLContext
+          -> IO SSL
+acceptTLS sck ctx =
       handle (\ (e :: SomeException) -> sClose sck >> throwIO e) $ do
           ssl <- SSL.connection ctx sck
           SSL.accept ssl
-          return (sck, ssl, peer, port)
+          return ssl
 
 -- | https:// 'Request'/'Response' loop
 --
@@ -150,8 +148,12 @@ listenTLS' timeout mlog socket https handler = do
                 shutdownClose socket ssl
 
          loop :: IO ()
-         loop = forever $ do w@(socket, ssl, _, _) <- acceptTLS https
-                             forkIO $ work w `catch` (\(e :: SomeException) -> do
+         loop = forever $ do -- do a normal accept
+                             (sck, peer, port) <- acceptLite (httpsSocket https)
+                             forkIO $ do -- do the TLS accept/handshake
+                                         ssl <- acceptTLS sck (sslContext https)
+                                         work (sck, ssl, peer, port)
+                                           `catch` (\(e :: SomeException) -> do
                                                           shutdownClose socket ssl
                                                           throwIO e)
                              return ()
