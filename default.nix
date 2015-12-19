@@ -4,13 +4,13 @@
 }:
 mkDerivation {
   pname = "happstack-server-tls";
-  version = "7.1.5";
+  version = "7.1.6";
   src = ./.;
-  buildDepends = [
+  libraryHaskellDepends = [
     base bytestring extensible-exceptions happstack-server hslogger
     HsOpenSSL network sendfile time unix
   ];
-  extraLibraries = [ openssl ];
+  librarySystemDepends = [ openssl ];
   homepage = "http://www.happstack.com/";
   description = "extend happstack-server with https:// support (TLS/SSL)";
   license = stdenv.lib.licenses.bsd3;

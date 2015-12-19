@@ -1,5 +1,5 @@
 Name:                happstack-server-tls
-Version:             7.1.6
+Version:             7.1.6.1
 Synopsis:            extend happstack-server with https:// support (TLS/SSL)
 Description:         extend happstack-server with https:// support (TLS/SSL)
 Homepage:            http://www.happstack.com/
@@ -11,6 +11,7 @@ Copyright:           2012 Jeremy Shaw
 Category:            Web, Happstack
 Build-type:          Simple
 Cabal-version:       >=1.6
+tested-with:         GHC == 7.6.3, GHC == 7.8.4, GHC == 7.10.3
 
 source-repository head
     type:     git
