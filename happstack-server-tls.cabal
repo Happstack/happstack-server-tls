@@ -33,7 +33,7 @@ Library
                        HsOpenSSL             >= 0.10 && < 0.12,
                        network               >= 2.3 && < 2.7,
                        sendfile              == 0.7.*,
-                       time                  >= 1.2 && < 1.6
+                       time                  >= 1.2 && < 1.7
     -- these extra libraries are not needed to build/install the server
     -- but they do need to be installed if you want to use GHCi or
     -- Template Haskell afterwards
