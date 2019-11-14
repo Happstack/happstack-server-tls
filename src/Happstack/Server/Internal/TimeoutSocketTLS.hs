@@ -11,7 +11,7 @@ import qualified Data.ByteString.Lazy.Internal as L
 import qualified Data.ByteString               as S
 import qualified Happstack.Server.Internal.TimeoutManager as TM
 import           Happstack.Server.Internal.TimeoutIO (TimeoutIO(..))
-import           Network.Socket                (Socket, sClose)
+import           Network.Socket                (Socket, close)
 import           Network.Socket.SendFile (ByteCount, Offset)
 import           OpenSSL.Session               (SSL)
 import qualified OpenSSL.Session               as SSL
@@ -49,7 +49,7 @@ timeoutSocketIO :: TM.Handle -> Socket -> SSL -> TimeoutIO
 timeoutSocketIO handle socket ssl =
     TimeoutIO { toHandle      = handle
               , toShutdown    = do SSL.shutdown ssl SSL.Unidirectional `catch` ignoreException
-                                   sClose socket `catch` ignoreException
+                                   close socket `catch` ignoreException
               , toPutLazy     = sPutLazyTickle handle ssl
               , toPut         = sPutTickle     handle ssl
               , toGetContents = sGetContents   handle ssl

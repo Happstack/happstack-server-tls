@@ -14,7 +14,7 @@ import Happstack.Server.Internal.Socket           (acceptLite)
 import Happstack.Server.Internal.TimeoutManager   (cancel, initialize, register)
 import Happstack.Server.Internal.TimeoutSocketTLS as TSS
 import Happstack.Server.Internal.Types            (Request, Response)
-import Network.Socket                             (HostName, PortNumber, Socket, sClose, socketPort)
+import Network.Socket                             (HostName, PortNumber, Socket, close, socketPort)
 import Prelude                                    hiding (catch)
 import           OpenSSL                          (withOpenSSL)
 import           OpenSSL.Session                  (SSL, SSLContext)
@@ -90,7 +90,7 @@ acceptTLS :: Socket      -- ^ the socket returned from 'acceptLite'
           -> SSLContext
           -> IO SSL
 acceptTLS sck ctx =
-      handle (\ (e :: SomeException) -> sClose sck >> throwIO e) $ do
+      handle (\ (e :: SomeException) -> close sck >> throwIO e) $ do
           ssl <- SSL.connection ctx sck
           SSL.accept ssl
           return ssl
@@ -162,13 +162,13 @@ listenTLS' timeout mlog https@(HTTPS lsocket _) handler = do
      log' NOTICE ("Listening for https:// on port " ++ show sockPort)
      (infi `catch` (\e -> do log' ERROR ("https:// terminated by " ++ show (e :: SomeException))
                              throwIO e))
-       `finally` (sClose lsocket)
+       `finally` (close lsocket)
 
          where
            shutdownClose :: Socket -> SSL -> IO ()
            shutdownClose socket ssl =
                do SSL.shutdown ssl SSL.Unidirectional `E.catch` ignoreException
-                  sClose socket                       `E.catch` ignoreException
+                  close socket                       `E.catch` ignoreException
 
            -- exception handlers
            ignoreConnectionAbruptlyTerminated :: SSL.ConnectionAbruptlyTerminated -> IO ()
