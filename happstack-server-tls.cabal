@@ -11,7 +11,7 @@ Copyright:           2012-2019, Jeremy Shaw
 Category:            Web, Happstack
 Build-type:          Simple
 Cabal-version:       >=1.10
-tested-with:         GHC==8.0.1, GHC==8.2.2, GHC==8.4.1, GHC==8.6.5, GHC==8.8.1
+tested-with:         GHC==8.0.1, GHC==8.2.2, GHC==8.4.1, GHC==8.6.5, GHC==8.8.1, GHC==8.10.2
 extra-source-files:  README.md
 
 source-repository head
