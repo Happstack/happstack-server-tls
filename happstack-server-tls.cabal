@@ -1,5 +1,5 @@
 Name:                happstack-server-tls
-Version:             7.2.1.4
+Version:             7.2.1.5
 Synopsis:            extend happstack-server with https:// support (TLS/SSL)
 Description:         Allows you to use https:// without relying on apache, nginx, etc
 Homepage:            http://www.happstack.com/
@@ -11,7 +11,7 @@ Copyright:           2012-2019, Jeremy Shaw
 Category:            Web, Happstack
 Build-type:          Simple
 Cabal-version:       >=1.10
-tested-with:         GHC==8.0.2, GHC==8.2.2, GHC==8.4.4, GHC==8.6.5, GHC==8.8.4, GHC==8.10.7, GHC==9.0.2, GHC==9.2.5, GHC==9.4.3
+tested-with:         GHC==8.0.2, GHC==8.2.2, GHC==8.4.4, GHC==8.6.5, GHC==8.8.4, GHC==8.10.7, GHC==9.0.2, GHC==9.2.5, GHC==9.4.8, GHC==9.6.4, GHC==9.8.1
 extra-source-files:  README.md
 
 source-repository head
@@ -27,9 +27,9 @@ Library
                        Happstack.Server.SimpleHTTPS
 
     Build-Depends:     base                  <  5,
-                       bytestring            >= 0.9 && < 0.12,
+                       bytestring            >= 0.9 && < 0.13,
                        extensible-exceptions == 0.1.*,
-                       happstack-server      >= 6.6.4 && < 7.9,
+                       happstack-server      >= 6.6.4 && < 7.10,
                        hslogger              >= 1.1 && < 1.4,
                        HsOpenSSL             >= 0.10 && < 0.12,
                        network               >  3.0.0 && < 3.2,

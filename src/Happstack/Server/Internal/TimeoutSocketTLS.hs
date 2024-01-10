@@ -30,6 +30,18 @@ sPutTickle thandle ssl cs =
        TM.tickle thandle
 {-# INLINE sPutTickle #-}
 
+sGet :: TM.Handle
+     -> SSL
+     -> IO (Maybe B.ByteString)
+sGet handle ssl =
+  do s <- SSL.read ssl chunkSize
+     TM.tickle handle
+     if S.null s
+       then pure Nothing
+       else pure (Just s)
+  where
+    chunkSize = 65536
+
 sGetContents :: TM.Handle
              -> SSL              -- ^ Connected socket
              -> IO L.ByteString  -- ^ Data received
@@ -52,6 +64,7 @@ timeoutSocketIO handle socket ssl =
                                    close socket `catch` ignoreException
               , toPutLazy     = sPutLazyTickle handle ssl
               , toPut         = sPutTickle     handle ssl
+              , toGet         = sGet           handle ssl
               , toGetContents = sGetContents   handle ssl
               , toSendFile    = sendFileTickle handle ssl
               , toSecure      = True

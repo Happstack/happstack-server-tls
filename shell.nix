@@ -6,7 +6,7 @@ let
 
   f = { mkDerivation, base, bytestring, extensible-exceptions
       , happstack-server, hslogger, HsOpenSSL, network, openssl, sendfile
-      , stdenv, time, unix
+      , stdenv, time, unix, cabal-install
       }:
       mkDerivation {
         pname = "happstack-server-tls";
