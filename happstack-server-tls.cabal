@@ -32,9 +32,9 @@ Library
                        happstack-server      >= 6.6.4 && < 7.10,
                        hslogger              >= 1.1 && < 1.4,
                        HsOpenSSL             >= 0.10 && < 0.12,
-                       network               >  3.0.0 && < 3.2,
+                       network               >  3.0.0 && < 3.3,
                        sendfile              == 0.7.*,
-                       time                  >= 1.2 && < 1.14
+                       time                  >= 1.2 && < 1.15
     -- these extra libraries are not needed to build/install the server
     -- but they do need to be installed if you want to use GHCi or
     -- Template Haskell afterwards
