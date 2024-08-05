@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.17.20240109
+# version: 0.18.1
 #
-# REGENDATA ("0.17.20240109",["github","happstack-server-tls.cabal"])
+# REGENDATA ("0.18.1",["github","happstack-server-tls.cabal"])
 #
 name: Haskell-CI
 on:
@@ -31,11 +31,6 @@ jobs:
           - compiler: ghc-9.10.1
             compilerKind: ghc
             compilerVersion: 9.10.1
-            setup-method: ghcup
-            allow-failure: false
-          - compiler: ghc-9.8.1
-            compilerKind: ghc
-            compilerVersion: 9.8.1
             setup-method: ghcup
             allow-failure: false
           - compiler: ghc-9.8.2
@@ -197,7 +192,7 @@ jobs:
           chmod a+x $HOME/.cabal/bin/cabal-plan
           cabal-plan --version
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: source
         env:
