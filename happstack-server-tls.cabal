@@ -1,5 +1,5 @@
 Name:                happstack-server-tls
-Version:             7.2.1.5
+Version:             7.2.1.6
 Synopsis:            extend happstack-server with https:// support (TLS/SSL)
 Description:         Allows you to use https:// without relying on apache, nginx, etc
 Homepage:            http://www.happstack.com/
