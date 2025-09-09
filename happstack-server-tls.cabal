@@ -1,5 +1,5 @@
 Name:                happstack-server-tls
-Version:             7.2.1.6
+Version:             7.2.1.7
 Synopsis:            extend happstack-server with https:// support (TLS/SSL)
 Description:         Allows you to use https:// without relying on apache, nginx, etc
 Homepage:            http://www.happstack.com/
@@ -11,8 +11,24 @@ Copyright:           2012-2019, Jeremy Shaw
 Category:            Web, Happstack
 Build-type:          Simple
 Cabal-version:       >=1.10
-tested-with:         GHC==8.0.2, GHC==8.2.2, GHC==8.4.4, GHC==8.6.5, GHC==8.8.4, GHC==8.10.7, GHC==9.0.2, GHC==9.2.5, GHC==9.4.8, GHC==9.6.4, GHC==9.8.2
 extra-source-files:  README.md
+tested-with:
+  GHC == 9.14.1
+  GHC == 9.12.2
+  GHC == 9.10.2
+  GHC == 9.8.2
+  GHC == 9.6.7
+  GHC == 9.4.8
+  GHC == 9.2.8
+  GHC == 9.0.2
+  GHC == 8.10.7
+  GHC == 8.8.4
+  GHC == 8.6.5
+  GHC == 8.4.4
+  GHC == 8.2.2
+  GHC == 8.0.2
+
+
 
 source-repository head
     type:     git
@@ -34,7 +50,7 @@ Library
                        HsOpenSSL             >= 0.10 && < 0.12,
                        network               >  3.0.0 && < 3.3,
                        sendfile              == 0.7.*,
-                       time                  >= 1.2 && < 1.15
+                       time                  >= 1.2 && < 1.16
     -- these extra libraries are not needed to build/install the server
     -- but they do need to be installed if you want to use GHCi or
     -- Template Haskell afterwards
